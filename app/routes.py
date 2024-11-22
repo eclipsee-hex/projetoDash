@@ -1,48 +1,64 @@
 import os
 import pandas as pd
-import json
-from flask import Blueprint, jsonify, Response
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import io
+import base64
+from flask import Blueprint, redirect, url_for
 
 main = Blueprint('main', __name__)
 
-UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'uploads')  # Caminho para a pasta 'uploads'
+UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'uploads')
 
-#def normalize_dataframe(df):
-#    return df.applymap(
-#        lambda x: x.encode('latin1').decode('utf-8') if isinstance(x, str) else x
-#    )
-#]
-
-def substituir_ao(df):
-    return df.map(
-        lambda x: x.replace("ão", "ao") if isinstance(x, str) else x
-    )
-
-
+# Rota inicial redirecionando para /analise
 @main.route("/")
-def carregar_csv():
-    arquivos_csv = []
-    
-    for arquivo in os.listdir(UPLOAD_FOLDER):
-        if arquivo.endswith(".csv"):
-            arquivo_path = os.path.join(UPLOAD_FOLDER, arquivo)
-            print(f"Lendo o arquivo: {arquivo_path}")
-            
-            # Lê o CSV com o encoding especificado
+def home():
+    return redirect(url_for('main.analise'))
+
+# Rota para gerar e exibir o gráfico de análise
+@main.route("/analise")
+def analise():
+    arquivo_csv = os.path.join(UPLOAD_FOLDER, 'gastosNovembroPorCategoria.csv')
+
+    try:
+        # Lê o CSV
+        def converter_valor(valor):
             try:
-                df = pd.read_csv(arquivo_path, encoding='utf-8', on_bad_lines='skip')  # Ignora linhas mal formadas
-                #df = normalize_dataframe(df)
-                df = substituir_ao(df)
-                arquivos_csv.append({
-                    "nome_arquivo": arquivo,
-                    "dados": df.head().to_dict(orient="records")  # Exibe as primeiras linhas como exemplo
-                })
-            except Exception as e:
-                print(f"Erro ao ler o arquivo {arquivo}: {str(e)}")
+                return float(valor.replace('R$', '').replace(',', '.').strip())
+                
+            except:
+                return 0.0
+        
+        
+        df = pd.read_csv(arquivo_csv, encoding='utf-8')
+        df_numeric = df.applymap(converter_valor)
+        
+        print("convertido")
+
+        # Soma os valores por categoria
+        totais_por_categoria = df_numeric.sum()
+        print("valores somados")
+        
+        # Gera o gráfico
+        plt.figure(figsize=(10, 6))
+        totais_por_categoria.plot(kind='bar', color='skyblue', edgecolor='black')
+        plt.title("Gastos Totais por Categoria - Novembro", fontsize=16)
+        plt.xlabel("Categorias", fontsize=12)
+        plt.ylabel("Gastos Totais (R$)", fontsize=12)
+        plt.xticks(rotation=45, fontsize=10)
+        plt.grid(axis='y', linestyle='--', alpha=0.7)
+
+        # Salva o gráfico como imagem base64
+        buf = io.BytesIO()
+        plt.tight_layout()
+        plt.savefig(buf, format='png')
+        buf.seek(0)
+        plt.close()
+
+        # Retorna a imagem como resposta HTML
+        img_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+        return f'<img src="data:image/png;base64,{img_base64}"/>'
     
-    if not arquivos_csv:
-        return jsonify({"message": "Nenhum arquivo CSV encontrado!"}), 404
-    
-    return Response(json.dumps(arquivos_csv, ensure_ascii=False), content_type='application/json; charset=utf-8')
-    
-    #return jsonify(arquivos_csv), 200
+    except Exception as e:
+        return f"Erro ao gerar o gráfico: {str(e)}", 500
