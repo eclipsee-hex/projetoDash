@@ -33,20 +33,19 @@ def analise():
         
         df = pd.read_csv(arquivo_csv, encoding='utf-8')
         df_numeric = df.applymap(converter_valor)
-        
-        print("convertido")
+
 
         # Soma os valores por categoria
         totais_por_categoria = df_numeric.sum()
         print("valores somados")
         
         # Gera o gráfico
-        plt.figure(figsize=(10, 6))
+        plt.figure(figsize=(8, 6))
         totais_por_categoria.plot(kind='bar', color='skyblue', edgecolor='black')
-        plt.title("Gastos Totais por Categoria - Novembro", fontsize=16)
-        plt.xlabel("Categorias", fontsize=12)
-        plt.ylabel("Gastos Totais (R$)", fontsize=12)
-        plt.xticks(rotation=45, fontsize=10)
+        plt.title("Gastos Totais por Categoria - Novembro", fontsize=14)
+        plt.xlabel("Categorias", fontsize=10)
+        plt.ylabel("Gastos Totais (R$)", fontsize=11)
+        plt.xticks(rotation=45, fontsize=8)
         plt.grid(axis='y', linestyle='--', alpha=0.7)
 
         # Salva o gráfico como imagem base64
@@ -62,3 +61,5 @@ def analise():
     
     except Exception as e:
         return f"Erro ao gerar o gráfico: {str(e)}", 500
+    
+    
