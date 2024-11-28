@@ -7,6 +7,8 @@ import io
 import base64
 from flask import Blueprint, redirect, url_for
 
+
+
 main = Blueprint('main', __name__)
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'uploads')
@@ -20,6 +22,8 @@ def home():
 @main.route("/analise")
 def analise():
     arquivo_csv = os.path.join(UPLOAD_FOLDER, 'gastosNovembroPorCategoria.csv')
+    
+    
 
     try:
         # Lê o CSV
